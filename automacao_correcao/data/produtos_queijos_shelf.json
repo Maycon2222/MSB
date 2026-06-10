@@ -1,0 +1,639 @@
+﻿[
+    {
+        "COD FISCAL":  "1053002",
+        "PRODUTO":  "PARMESÃO RALADO C/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1054003",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1057004",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "120",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1067002",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "100g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1005002",
+        "PRODUTO":  "PRATO LANCHE",
+        "PESO LIQ":  "2Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1022002",
+        "PRODUTO":  "PRATO MINI LANCHE",
+        "PESO LIQ":  "460g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1033002",
+        "PRODUTO":  "PRATO COBOCÓ",
+        "PESO LIQ":  "370g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1031001",
+        "PRODUTO":  "PRATO ESFÉRICO",
+        "PESO LIQ":  "1,8Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1136001",
+        "PRODUTO":  "MUSSARELA PEÇA",
+        "PESO LIQ":  "4Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1010001",
+        "PRODUTO":  "MINAS PADRÃO PEÇA",
+        "PESO LIQ":  "540g",
+        "QTDE CAIXA":  "10",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1009002",
+        "PRODUTO":  "MINAS PADRÃO FRACIONADO",
+        "PESO LIQ":  "445g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1049001",
+        "PRODUTO":  "MINAS PADRÃO LIGHT FRACIONADO",
+        "PESO LIQ":  "445g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1070002",
+        "PRODUTO":  "COALHO ESPETO",
+        "PESO LIQ":  "320g",
+        "QTDE CAIXA":  "18",
+        "SHELF (DIAS)":  "105"
+    },
+    {
+        "COD FISCAL":  "1356001",
+        "PRODUTO":  "COALHO ASSA FÁCIL",
+        "PESO LIQ":  "600g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "105"
+    },
+    {
+        "COD FISCAL":  "1020001",
+        "PRODUTO":  "REINO BOLA LATA",
+        "PESO LIQ":  "1,3Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1023001",
+        "PRODUTO":  "REINO BOLA S/LATA",
+        "PESO LIQ":  "1,3Kg",
+        "QTDE CAIXA":  "4",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1021001",
+        "PRODUTO":  "REINO FRACIONADO",
+        "PESO LIQ":  "215g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1019003",
+        "PRODUTO":  "REINO 1/2 LATA ESPECIAL",
+        "PESO LIQ":  "690g",
+        "QTDE CAIXA":  "4",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1006002",
+        "PRODUTO":  "PROVOLONE PEÇA",
+        "PESO LIQ":  "6,2Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1330001",
+        "PRODUTO":  "PROVOLONE FRACIONADO",
+        "PESO LIQ":  "250g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1030001",
+        "PRODUTO":  "PROVOLONE PEÇA",
+        "PESO LIQ":  "650g",
+        "QTDE CAIXA":  "8",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1013001",
+        "PRODUTO":  "GOUDA PEÇA",
+        "PESO LIQ":  "3Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1313002",
+        "PRODUTO":  "GOUDA FRACIONADO",
+        "PESO LIQ":  "260g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1012001",
+        "PRODUTO":  "EDAM PEÇA",
+        "PESO LIQ":  "1,9Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1312002",
+        "PRODUTO":  "EDAM FRACIONADO",
+        "PESO LIQ":  "190g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1041004",
+        "PRODUTO":  "AZUL PEÇA",
+        "PESO LIQ":  "3,2Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1040004",
+        "PRODUTO":  "AZUL FRACIONADO",
+        "PESO LIQ":  "180g",
+        "QTDE CAIXA":  "18",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1044005",
+        "PRODUTO":  "BRIE PEÇA",
+        "PESO LIQ":  "1,1Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "60"
+    },
+    {
+        "COD FISCAL":  "1043005",
+        "PRODUTO":  "BRIE FRACIONADO",
+        "PESO LIQ":  "115g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "60"
+    },
+    {
+        "COD FISCAL":  "1007001",
+        "PRODUTO":  "ESTEPE PEÇA",
+        "PESO LIQ":  "7Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1307002",
+        "PRODUTO":  "ESTEPE FRACIONADO",
+        "PESO LIQ":  "170g",
+        "QTDE CAIXA":  "20",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1253001",
+        "PRODUTO":  "PARMESÃO PEÇA",
+        "PESO LIQ":  "5,7Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "365"
+    },
+    {
+        "COD FISCAL":  "1252001",
+        "PRODUTO":  "PARMESÃO FRACIONADO",
+        "PESO LIQ":  "250g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1215001",
+        "PRODUTO":  "QUARTIROLO FRACIONADO",
+        "PESO LIQ":  "360g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1032004",
+        "PRODUTO":  "EMMENTAL PEÇA",
+        "PESO LIQ":  "12Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1055004",
+        "PRODUTO":  "SUIÇO PEÇA",
+        "PESO LIQ":  "5,5Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1033002",
+        "PRODUTO":  "PARMESÃO RALADO C/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1034002",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1037002",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "50g",
+        "QTDE CAIXA":  "120",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1047002",
+        "PRODUTO":  "PARMESÃO RALADO S/T",
+        "PESO LIQ":  "100g",
+        "QTDE CAIXA":  "60",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1000002",
+        "PRODUTO":  "PRATO LANCHE",
+        "PESO LIQ":  "2Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1022002",
+        "PRODUTO":  "PRATO MINI LANCHE",
+        "PESO LIQ":  "460g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1033002",
+        "PRODUTO":  "PRATO COBOCÓ",
+        "PESO LIQ":  "370g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1031001",
+        "PRODUTO":  "PRATO ESFÉRICO",
+        "PESO LIQ":  "1,8Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1136001",
+        "PRODUTO":  "MUSSARELA PEÇA",
+        "PESO LIQ":  "4Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1010001",
+        "PRODUTO":  "MINAS PADRÃO PEÇA",
+        "PESO LIQ":  "540g",
+        "QTDE CAIXA":  "10",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1009002",
+        "PRODUTO":  "MINAS PADRÃO FRACIONADO",
+        "PESO LIQ":  "445g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1049001",
+        "PRODUTO":  "MINAS PADRÃO LIGHT FRACIONADO",
+        "PESO LIQ":  "445g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1070002",
+        "PRODUTO":  "COALHO ESPETO",
+        "PESO LIQ":  "320g",
+        "QTDE CAIXA":  "18",
+        "SHELF (DIAS)":  "105"
+    },
+    {
+        "COD FISCAL":  "1356001",
+        "PRODUTO":  "COALHO ASSA FÁCIL",
+        "PESO LIQ":  "600g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "105"
+    },
+    {
+        "COD FISCAL":  "1020001",
+        "PRODUTO":  "REINO BOLA LATA",
+        "PESO LIQ":  "1,3Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1023001",
+        "PRODUTO":  "REINO BOLA S/LATA",
+        "PESO LIQ":  "1,3Kg",
+        "QTDE CAIXA":  "4",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1021001",
+        "PRODUTO":  "REINO FRACIONADO",
+        "PESO LIQ":  "215g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1019003",
+        "PRODUTO":  "REINO 1/2 LATA ESPECIAL",
+        "PESO LIQ":  "690g",
+        "QTDE CAIXA":  "4",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1006002",
+        "PRODUTO":  "PROVOLONE PEÇA",
+        "PESO LIQ":  "6,2Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1330001",
+        "PRODUTO":  "PROVOLONE FRACIONADO",
+        "PESO LIQ":  "250g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1030001",
+        "PRODUTO":  "PROVOLONE PEÇA",
+        "PESO LIQ":  "650g",
+        "QTDE CAIXA":  "8",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1013001",
+        "PRODUTO":  "GOUDA PEÇA",
+        "PESO LIQ":  "3Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1313002",
+        "PRODUTO":  "GOUDA FRACIONADO",
+        "PESO LIQ":  "260g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1012001",
+        "PRODUTO":  "EDAM PEÇA",
+        "PESO LIQ":  "1,9Kg",
+        "QTDE CAIXA":  "3",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1312002",
+        "PRODUTO":  "EDAM FRACIONADO",
+        "PESO LIQ":  "190g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1041004",
+        "PRODUTO":  "AZUL PEÇA",
+        "PESO LIQ":  "3,2Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1040004",
+        "PRODUTO":  "AZUL FRACIONADO",
+        "PESO LIQ":  "180g",
+        "QTDE CAIXA":  "18",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1044005",
+        "PRODUTO":  "BRIE PEÇA",
+        "PESO LIQ":  "1,1Kg",
+        "QTDE CAIXA":  "2",
+        "SHELF (DIAS)":  "60"
+    },
+    {
+        "COD FISCAL":  "1043005",
+        "PRODUTO":  "BRIE FRACIONADO",
+        "PESO LIQ":  "115g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "60"
+    },
+    {
+        "COD FISCAL":  "1007001",
+        "PRODUTO":  "ESTEPE PEÇA",
+        "PESO LIQ":  "7Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "150"
+    },
+    {
+        "COD FISCAL":  "1307002",
+        "PRODUTO":  "ESTEPE FRACIONADO",
+        "PESO LIQ":  "170g",
+        "QTDE CAIXA":  "20",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1253001",
+        "PRODUTO":  "PARMESÃO PEÇA",
+        "PESO LIQ":  "5,7Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "365"
+    },
+    {
+        "COD FISCAL":  "1252001",
+        "PRODUTO":  "PARMESÃO FRACIONADO",
+        "PESO LIQ":  "250g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1215001",
+        "PRODUTO":  "QUARTIROLO FRACIONADO",
+        "PESO LIQ":  "360g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1032004",
+        "PRODUTO":  "EMMENTAL PEÇA",
+        "PESO LIQ":  "12Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1055004",
+        "PRODUTO":  "SUIÇO PEÇA",
+        "PESO LIQ":  "5,5Kg",
+        "QTDE CAIXA":  "1",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1088001",
+        "PRODUTO":  "MANTEIGA C/ SAL POTE",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "16",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1085002",
+        "PRODUTO":  "MANTEIGA C/ SAL TABLETE",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "30",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1086001",
+        "PRODUTO":  "MANTEIGA S/ SAL TABLETE",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "30",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1184001",
+        "PRODUTO":  "NATA POTE",
+        "PESO LIQ":  "300g",
+        "QTDE CAIXA":  "8",
+        "SHELF (DIAS)":  "60"
+    },
+    {
+        "COD FISCAL":  "1231001",
+        "PRODUTO":  "CREME DE RICOTA TRADICIONAL",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "75"
+    },
+    {
+        "COD FISCAL":  "1226001",
+        "PRODUTO":  "CREME DE RICOTA LIGHT",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "75"
+    },
+    {
+        "COD FISCAL":  "1277001",
+        "PRODUTO":  "REQUEIJÃO TRADICIONAL",
+        "PESO LIQ":  "220g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1071001",
+        "PRODUTO":  "REQUEIJÃO TIPO SUÍÇO",
+        "PESO LIQ":  "220g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1074001",
+        "PRODUTO":  "REQUEIJÃO BISNAGA",
+        "PESO LIQ":  "400g",
+        "QTDE CAIXA":  "9",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1353001",
+        "PRODUTO":  "CHEDDAR BISNAGA",
+        "PESO LIQ":  "400g",
+        "QTDE CAIXA":  "9",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1101002",
+        "PRODUTO":  "PARMESÃO RALADO",
+        "PESO LIQ":  "1Kg",
+        "QTDE CAIXA":  "5",
+        "SHELF (DIAS)":  "125"
+    },
+    {
+        "COD FISCAL":  "1089001",
+        "PRODUTO":  "MANTEIGA C/ SAL POTE",
+        "PESO LIQ":  "500g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1075002",
+        "PRODUTO":  "REQUEIJÃO BISNAGA",
+        "PESO LIQ":  "1,5Kg",
+        "QTDE CAIXA":  "6",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1354000",
+        "PRODUTO":  "CHEDDAR BISNAGA",
+        "PESO LIQ":  "1,5Kg",
+        "QTDE CAIXA":  "6",
+        "SHELF (DIAS)":  "90"
+    },
+    {
+        "COD FISCAL":  "1472001",
+        "PRODUTO":  "CREAM CHEESE BISNAGA",
+        "PESO LIQ":  "1,5Kg",
+        "QTDE CAIXA":  "6",
+        "SHELF (DIAS)":  "120"
+    },
+    {
+        "COD FISCAL":  "1497002",
+        "PRODUTO":  "LEITE DE CABRA EM PÓ INTEGRAL",
+        "PESO LIQ":  "200g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "365"
+    },
+    {
+        "COD FISCAL":  "1597002",
+        "PRODUTO":  "LEITE DE CABRA EM PÓ INTEGRAL",
+        "PESO LIQ":  "400g",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "547"
+    },
+    {
+        "COD FISCAL":  "1186001",
+        "PRODUTO":  "LEITE DE CABRA UHT INTEGRAL",
+        "PESO LIQ":  "1L",
+        "QTDE CAIXA":  "12",
+        "SHELF (DIAS)":  "180"
+    },
+    {
+        "COD FISCAL":  "1392002",
+        "PRODUTO":  "PREPARADO ALIMENTÍCIO FATIADO SABOR CHEDDAR",
+        "PESO LIQ":  "2,270Kg",
+        "QTDE CAIXA":  "4",
+        "SHELF (DIAS)":  "150"
+    }
+]

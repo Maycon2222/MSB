@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.log
+*.tmp
+~$*
+
+# Arquivos de entrada/saida locais com dados reais
+XML
+XML/
+_backup_*/
+_sieg_downloads/
+outputs/
+saida/
+entrada/
+*.xlsx
+*.xls
+*.csv
+*.xml
+*.pdf
+
+# Ambiente local
+.env
+.env.*
+!.env.example

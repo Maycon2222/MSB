@@ -1,0 +1,779 @@
+from __future__ import annotations
+
+from datetime import datetime
+import csv
+import json
+from pathlib import Path
+import re
+import unicodedata
+import xml.etree.ElementTree as ET
+
+from automacao_correcao.operations.xml_nfe import NFE_NAMESPACE, get_all_texts, get_first_text
+
+
+MONEY_TOLERANCE = 0.05
+QUANTITY_TOLERANCE = 0.001
+
+GENERIC_CFOPS = {"5949", "6949", "1949", "2949"}
+
+CFOP_RETURN_MAP: dict[str, set[str]] = {
+    "5101": {"1201"},
+    "6101": {"2201"},
+    "5102": {"1202"},
+    "6102": {"2202"},
+    "5405": {"1411"},
+    "6404": {"2411"},
+    "6405": {"2411"},
+    "1101": {"5201"},
+    "1102": {"5202"},
+    "2101": {"6201"},
+    "2102": {"6202"},
+}
+
+RETURN_CFOPS = set().union(*CFOP_RETURN_MAP.values()) | GENERIC_CFOPS
+RETURN_NATURE_TERMS = {"devolucao", "devolu", "retorno"}
+
+
+def only_digits(value: object) -> str:
+    return re.sub(r"\D", "", str(value or ""))
+
+
+def normalize_text(value: object) -> str:
+    text = unicodedata.normalize("NFD", str(value or "")).casefold()
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", text)).strip()
+
+
+def to_float(value: object) -> float:
+    if value is None:
+        return 0.0
+    text = str(value).strip()
+    if not text:
+        return 0.0
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        return float(text)
+    except ValueError:
+        return 0.0
+
+
+def close_money(left: object, right: object, tolerance: float = MONEY_TOLERANCE) -> bool:
+    return abs(to_float(left) - to_float(right)) <= tolerance
+
+
+def close_qty(left: object, right: object, tolerance: float = QUANTITY_TOLERANCE) -> bool:
+    return abs(to_float(left) - to_float(right)) <= tolerance
+
+
+def cfop_key(value: object) -> str:
+    return only_digits(value)
+
+
+def parse_date(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        return datetime.fromisoformat(text[:19]).date().isoformat()
+    except ValueError:
+        return text[:10]
+
+
+def alert(
+    nivel: str,
+    campo: str,
+    mensagem: str,
+    valor_original: object = "",
+    valor_devolucao: object = "",
+    sugestao: str = "",
+) -> dict[str, object]:
+    return {
+        "nivel": nivel,
+        "campo": campo,
+        "mensagem": mensagem,
+        "valor_original": valor_original,
+        "valor_devolucao": valor_devolucao,
+        "sugestao": sugestao,
+    }
+
+
+def first_tax_group(parent: ET.Element | None, tax_name: str) -> ET.Element | None:
+    if parent is None:
+        return None
+    group = parent.find(f"nfe:{tax_name}", NFE_NAMESPACE)
+    if group is None:
+        return None
+    children = list(group)
+    return children[0] if children else group
+
+
+def extract_item(det: ET.Element) -> dict[str, object]:
+    prod = det.find("nfe:prod", NFE_NAMESPACE)
+    imposto = det.find("nfe:imposto", NFE_NAMESPACE)
+    icms = first_tax_group(imposto, "ICMS")
+    ipi = first_tax_group(imposto, "IPI")
+    pis = first_tax_group(imposto, "PIS")
+    cofins = first_tax_group(imposto, "COFINS")
+    if prod is None:
+        prod = ET.Element("prod")
+
+    cst = get_first_text(icms, "nfe:CST") if icms is not None else ""
+    csosn = get_first_text(icms, "nfe:CSOSN") if icms is not None else ""
+
+    return {
+        "codigo_produto": get_first_text(prod, "nfe:cProd"),
+        "descricao": get_first_text(prod, "nfe:xProd"),
+        "ncm": get_first_text(prod, "nfe:NCM"),
+        "cfop": get_first_text(prod, "nfe:CFOP"),
+        "cst_csosn": cst or csosn,
+        "quantidade": to_float(get_first_text(prod, "nfe:qCom")),
+        "unidade": get_first_text(prod, "nfe:uCom"),
+        "valor_unitario": to_float(get_first_text(prod, "nfe:vUnCom")),
+        "valor_total": to_float(get_first_text(prod, "nfe:vProd")),
+        "desconto": to_float(get_first_text(prod, "nfe:vDesc")),
+        "base_icms": to_float(get_first_text(icms, "nfe:vBC")) if icms is not None else 0.0,
+        "aliquota_icms": to_float(get_first_text(icms, "nfe:pICMS")) if icms is not None else 0.0,
+        "valor_icms": to_float(get_first_text(icms, "nfe:vICMS")) if icms is not None else 0.0,
+        "base_icms_st": to_float(get_first_text(icms, "nfe:vBCST")) if icms is not None else 0.0,
+        "valor_icms_st": to_float(get_first_text(icms, "nfe:vICMSST")) if icms is not None else 0.0,
+        "ipi": to_float(get_first_text(ipi, "nfe:vIPI")) if ipi is not None else 0.0,
+        "pis": to_float(get_first_text(pis, "nfe:vPIS")) if pis is not None else 0.0,
+        "cofins": to_float(get_first_text(cofins, "nfe:vCOFINS")) if cofins is not None else 0.0,
+    }
+
+
+def nfe_xml_to_note(xml_path: str | Path) -> dict[str, object]:
+    source = Path(xml_path).expanduser()
+    root = ET.parse(source).getroot()
+    inf_nfe = root.find(".//nfe:infNFe", NFE_NAMESPACE)
+    if inf_nfe is None:
+        raise ValueError(f"XML nao parece ser NF-e: {source}")
+
+    total = inf_nfe.find("nfe:total/nfe:ICMSTot", NFE_NAMESPACE)
+    observation = get_first_text(inf_nfe, "nfe:infAdic/nfe:infCpl")
+    xml_refs = get_all_texts(inf_nfe, ".//nfe:NFref/nfe:refNFe")
+    observation_refs = re.findall(r"\b\d{44}\b", observation)
+
+    return {
+        "arquivo_xml": str(source),
+        "nome_arquivo": source.name,
+        "chave_acesso": inf_nfe.attrib.get("Id", "").replace("NFe", "") or source.stem,
+        "numero_nota": get_first_text(inf_nfe, "nfe:ide/nfe:nNF"),
+        "data_emissao": parse_date(get_first_text(inf_nfe, "nfe:ide/nfe:dhEmi") or get_first_text(inf_nfe, "nfe:ide/nfe:dEmi")),
+        "cnpj_emitente": get_first_text(inf_nfe, "nfe:emit/nfe:CNPJ") or get_first_text(inf_nfe, "nfe:emit/nfe:CPF"),
+        "cnpj_destinatario": get_first_text(inf_nfe, "nfe:dest/nfe:CNPJ") or get_first_text(inf_nfe, "nfe:dest/nfe:CPF"),
+        "uf_emitente": get_first_text(inf_nfe, "nfe:emit/nfe:enderEmit/nfe:UF"),
+        "uf_destinatario": get_first_text(inf_nfe, "nfe:dest/nfe:enderDest/nfe:UF"),
+        "natureza_operacao": get_first_text(inf_nfe, "nfe:ide/nfe:natOp"),
+        "finalidade": get_first_text(inf_nfe, "nfe:ide/nfe:finNFe"),
+        "modelo": get_first_text(inf_nfe, "nfe:ide/nfe:mod"),
+        "serie": get_first_text(inf_nfe, "nfe:ide/nfe:serie"),
+        "valor_total_nota": to_float(get_first_text(total, "nfe:vNF")) if total is not None else 0.0,
+        "valor_total_produtos": to_float(get_first_text(total, "nfe:vProd")) if total is not None else 0.0,
+        "valor_frete": to_float(get_first_text(total, "nfe:vFrete")) if total is not None else 0.0,
+        "valor_desconto": to_float(get_first_text(total, "nfe:vDesc")) if total is not None else 0.0,
+        "valor_icms": to_float(get_first_text(total, "nfe:vICMS")) if total is not None else 0.0,
+        "valor_icms_st": to_float(get_first_text(total, "nfe:vST")) if total is not None else 0.0,
+        "valor_ipi": to_float(get_first_text(total, "nfe:vIPI")) if total is not None else 0.0,
+        "valor_pis": to_float(get_first_text(total, "nfe:vPIS")) if total is not None else 0.0,
+        "valor_cofins": to_float(get_first_text(total, "nfe:vCOFINS")) if total is not None else 0.0,
+        "referencias": list(dict.fromkeys(xml_refs + observation_refs)),
+        "itens": [extract_item(det) for det in inf_nfe.findall("nfe:det", NFE_NAMESPACE)],
+    }
+
+
+def listar_xmls_da_pasta(caminho_pasta: str | Path) -> list[Path]:
+    folder = Path(caminho_pasta).expanduser()
+    if folder.is_file() and folder.suffix.lower() == ".xml":
+        return [folder]
+    if not folder.exists() or not folder.is_dir():
+        raise ValueError(f"Pasta nao encontrada: {folder}")
+    return sorted(path for path in folder.rglob("*.xml") if path.is_file())
+
+
+def ler_xml(caminho_arquivo: str | Path) -> ET.ElementTree:
+    return ET.parse(Path(caminho_arquivo).expanduser())
+
+
+def extrair_dados_nfe(xml: ET.ElementTree | ET.Element | str | Path) -> dict[str, object]:
+    if isinstance(xml, (str, Path)):
+        return nfe_xml_to_note(xml)
+    root = xml.getroot() if isinstance(xml, ET.ElementTree) else xml
+    inf_nfe = root.find(".//nfe:infNFe", NFE_NAMESPACE)
+    if inf_nfe is None:
+        raise ValueError("XML nao parece ser NF-e: tag infNFe nao encontrada.")
+
+    total = inf_nfe.find("nfe:total/nfe:ICMSTot", NFE_NAMESPACE)
+    observation = get_first_text(inf_nfe, "nfe:infAdic/nfe:infCpl")
+    xml_refs = get_all_texts(inf_nfe, ".//nfe:NFref/nfe:refNFe")
+    observation_refs = re.findall(r"\b\d{44}\b", observation)
+
+    return {
+        "arquivo_xml": "",
+        "nome_arquivo": "",
+        "chave_acesso": inf_nfe.attrib.get("Id", "").replace("NFe", ""),
+        "numero_nota": get_first_text(inf_nfe, "nfe:ide/nfe:nNF"),
+        "data_emissao": parse_date(get_first_text(inf_nfe, "nfe:ide/nfe:dhEmi") or get_first_text(inf_nfe, "nfe:ide/nfe:dEmi")),
+        "cnpj_emitente": get_first_text(inf_nfe, "nfe:emit/nfe:CNPJ") or get_first_text(inf_nfe, "nfe:emit/nfe:CPF"),
+        "cnpj_destinatario": get_first_text(inf_nfe, "nfe:dest/nfe:CNPJ") or get_first_text(inf_nfe, "nfe:dest/nfe:CPF"),
+        "uf_emitente": get_first_text(inf_nfe, "nfe:emit/nfe:enderEmit/nfe:UF"),
+        "uf_destinatario": get_first_text(inf_nfe, "nfe:dest/nfe:enderDest/nfe:UF"),
+        "natureza_operacao": get_first_text(inf_nfe, "nfe:ide/nfe:natOp"),
+        "finalidade": get_first_text(inf_nfe, "nfe:ide/nfe:finNFe"),
+        "modelo": get_first_text(inf_nfe, "nfe:ide/nfe:mod"),
+        "serie": get_first_text(inf_nfe, "nfe:ide/nfe:serie"),
+        "valor_total_nota": to_float(get_first_text(total, "nfe:vNF")) if total is not None else 0.0,
+        "valor_total_produtos": to_float(get_first_text(total, "nfe:vProd")) if total is not None else 0.0,
+        "valor_frete": to_float(get_first_text(total, "nfe:vFrete")) if total is not None else 0.0,
+        "valor_desconto": to_float(get_first_text(total, "nfe:vDesc")) if total is not None else 0.0,
+        "valor_icms": to_float(get_first_text(total, "nfe:vICMS")) if total is not None else 0.0,
+        "valor_icms_st": to_float(get_first_text(total, "nfe:vST")) if total is not None else 0.0,
+        "valor_ipi": to_float(get_first_text(total, "nfe:vIPI")) if total is not None else 0.0,
+        "valor_pis": to_float(get_first_text(total, "nfe:vPIS")) if total is not None else 0.0,
+        "valor_cofins": to_float(get_first_text(total, "nfe:vCOFINS")) if total is not None else 0.0,
+        "referencias": list(dict.fromkeys(xml_refs + observation_refs)),
+        "itens": [extract_item(det) for det in inf_nfe.findall("nfe:det", NFE_NAMESPACE)],
+    }
+
+
+def aggregate_items(items: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    for item in items:
+        key = str(item.get("codigo_produto") or "").strip()
+        if not key:
+            continue
+        if key not in grouped:
+            grouped[key] = dict(item)
+            continue
+        target = grouped[key]
+        for field in [
+            "quantidade",
+            "valor_total",
+            "desconto",
+            "base_icms",
+            "valor_icms",
+            "base_icms_st",
+            "valor_icms_st",
+            "ipi",
+            "pis",
+            "cofins",
+        ]:
+            target[field] = to_float(target.get(field)) + to_float(item.get(field))
+    return grouped
+
+
+def identificar_devolucao(nota: dict[str, object]) -> bool:
+    nature = normalize_text(nota.get("natureza_operacao"))
+    if any(term in nature for term in RETURN_NATURE_TERMS):
+        return True
+    if str(nota.get("finalidade") or "").strip() == "4":
+        return True
+    if nota.get("referencias"):
+        return True
+    return any(cfop_key(item.get("cfop")) in RETURN_CFOPS for item in nota.get("itens", []))
+
+
+def indexar_notas_por_chave(lista_notas: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    indexed: dict[str, dict[str, object]] = {}
+    for note in lista_notas:
+        key = only_digits(note.get("chave_acesso"))
+        if key:
+            indexed[key] = note
+    return indexed
+
+
+def chave_original_referenciada(nota_devolucao: dict[str, object], notas_por_chave: dict[str, dict[str, object]]) -> str:
+    references = [only_digits(ref) for ref in nota_devolucao.get("referencias", []) if only_digits(ref)]
+    for reference in references:
+        if reference in notas_por_chave:
+            return reference
+    return references[0] if references else ""
+
+
+def validate_reference(nota_original: dict[str, object], nota_devolucao: dict[str, object]) -> list[dict[str, object]]:
+    references = {only_digits(ref) for ref in nota_devolucao.get("referencias", [])}
+    original_key = only_digits(nota_original.get("chave_acesso"))
+    if original_key and original_key in references:
+        return []
+    return [
+        alert(
+            "alto",
+            "referencia",
+            "Nota de devolucao nao referencia a chave da nota original.",
+            nota_original.get("chave_acesso"),
+            " | ".join(map(str, nota_devolucao.get("referencias", []))),
+            "Conferir a NF-e referenciada na devolucao.",
+        )
+    ]
+
+
+def validate_cnpj(nota_original: dict[str, object], nota_devolucao: dict[str, object]) -> list[dict[str, object]]:
+    alerts: list[dict[str, object]] = []
+    original_emit = only_digits(nota_original.get("cnpj_emitente"))
+    original_dest = only_digits(nota_original.get("cnpj_destinatario"))
+    return_emit = only_digits(nota_devolucao.get("cnpj_emitente"))
+    return_dest = only_digits(nota_devolucao.get("cnpj_destinatario"))
+    if original_emit != return_dest or original_dest != return_emit:
+        alerts.append(
+            alert(
+                "alto",
+                "CNPJ",
+                "Emitente/destinatario da devolucao nao estao invertidos em relacao a nota original.",
+                f"{original_emit} -> {original_dest}",
+                f"{return_emit} -> {return_dest}",
+                "Na devolucao, o cliente deve emitir contra o emitente da nota original.",
+            )
+        )
+    return alerts
+
+
+def identify_operation(nota: dict[str, object]) -> str:
+    return "interna" if str(nota.get("uf_emitente")) == str(nota.get("uf_destinatario")) else "interestadual"
+
+
+def validate_operation_uf(nota_devolucao: dict[str, object]) -> list[dict[str, object]]:
+    operation = identify_operation(nota_devolucao)
+    prefixes = {cfop_key(item.get("cfop"))[:1] for item in nota_devolucao.get("itens", [])}
+    expected = {"1", "5"} if operation == "interna" else {"2", "6"}
+    if prefixes and not prefixes <= expected:
+        return [
+            alert(
+                "medio",
+                "UF/CFOP",
+                "Prefixo do CFOP nao combina com operacao interna/interestadual.",
+                operation,
+                ", ".join(sorted(prefixes)),
+                "Conferir UF de emitente/destinatario e CFOP usado na devolucao.",
+            )
+        ]
+    return []
+
+
+def expected_return_cfops(original_cfop: object) -> set[str]:
+    return CFOP_RETURN_MAP.get(cfop_key(original_cfop), set())
+
+
+def validate_cfop(original_item: dict[str, object], return_item: dict[str, object]) -> list[dict[str, object]]:
+    original_cfop = cfop_key(original_item.get("cfop"))
+    return_cfop = cfop_key(return_item.get("cfop"))
+    expected = expected_return_cfops(original_cfop)
+    alerts: list[dict[str, object]] = []
+    if return_cfop in GENERIC_CFOPS and expected:
+        alerts.append(
+            alert(
+                "alto",
+                "CFOP",
+                "CFOP generico usado quando existe CFOP especifico de devolucao.",
+                original_item.get("cfop"),
+                return_item.get("cfop"),
+                f"Para CFOP {original_item.get('cfop')}, normalmente usar: {', '.join(sorted(expected))}.",
+            )
+        )
+    if expected and return_cfop not in expected:
+        alerts.append(
+            alert(
+                "alto",
+                "CFOP",
+                "CFOP da devolucao incompatível com a nota original.",
+                original_item.get("cfop"),
+                return_item.get("cfop"),
+                f"Para CFOP {original_item.get('cfop')}, normalmente usar: {', '.join(sorted(expected))}.",
+            )
+        )
+    elif not expected:
+        alerts.append(
+            alert(
+                "medio",
+                "CFOP",
+                "CFOP original sem regra cadastrada na tabela configuravel.",
+                original_item.get("cfop"),
+                return_item.get("cfop"),
+                "Cadastrar a relacao fiscal esperada para esse CFOP se a recorrencia for valida.",
+            )
+        )
+    return alerts
+
+
+def validate_quantity(original_item: dict[str, object], return_item: dict[str, object]) -> list[dict[str, object]]:
+    if to_float(return_item.get("quantidade")) - to_float(original_item.get("quantidade")) > QUANTITY_TOLERANCE:
+        return [
+            alert(
+                "alto",
+                "quantidade",
+                "Quantidade devolvida maior que a quantidade da nota original.",
+                original_item.get("quantidade"),
+                return_item.get("quantidade"),
+                "Conferir quantidade devolvida ou localizar a nota original correta.",
+            )
+        ]
+    return []
+
+
+def validate_product_coherence(original_item: dict[str, object], return_item: dict[str, object]) -> list[dict[str, object]]:
+    alerts: list[dict[str, object]] = []
+    for field, label in [("ncm", "NCM"), ("unidade", "unidade")]:
+        if normalize_text(original_item.get(field)) != normalize_text(return_item.get(field)):
+            alerts.append(alert("medio", label, f"{label} divergente entre original e devolucao.", original_item.get(field), return_item.get(field)))
+    if normalize_text(original_item.get("descricao")) != normalize_text(return_item.get("descricao")):
+        alerts.append(alert("baixo", "descricao", "Descricao do produto divergente.", original_item.get("descricao"), return_item.get("descricao")))
+    return alerts
+
+
+def validate_values(original_item: dict[str, object], return_item: dict[str, object]) -> list[dict[str, object]]:
+    alerts: list[dict[str, object]] = []
+    if not close_money(original_item.get("valor_unitario"), return_item.get("valor_unitario")):
+        alerts.append(
+            alert(
+                "alto",
+                "valor_unitario",
+                "Valor unitario da devolucao diverge da nota original.",
+                original_item.get("valor_unitario"),
+                return_item.get("valor_unitario"),
+            )
+        )
+    expected_total = to_float(return_item.get("quantidade")) * to_float(return_item.get("valor_unitario"))
+    if not close_money(expected_total, return_item.get("valor_total")):
+        alerts.append(alert("medio", "valor_total_item", "Valor total do item nao bate com quantidade x valor unitario.", expected_total, return_item.get("valor_total")))
+    return alerts
+
+
+def proportional_expected(original_item: dict[str, object], return_item: dict[str, object], field: str) -> float:
+    original_qty = to_float(original_item.get("quantidade"))
+    if original_qty <= 0:
+        return 0.0
+    ratio = to_float(return_item.get("quantidade")) / original_qty
+    return to_float(original_item.get(field)) * ratio
+
+
+def validate_taxes(original_item: dict[str, object], return_item: dict[str, object]) -> list[dict[str, object]]:
+    alerts: list[dict[str, object]] = []
+    if str(original_item.get("cst_csosn") or "") != str(return_item.get("cst_csosn") or ""):
+        alerts.append(
+            alert(
+                "medio",
+                "CST/CSOSN",
+                "CST/CSOSN da devolucao diverge da nota original.",
+                original_item.get("cst_csosn"),
+                return_item.get("cst_csosn"),
+                "Conferir se a devolucao deve espelhar a tributacao da operacao original.",
+            )
+        )
+    for field, label in [
+        ("base_icms", "base ICMS"),
+        ("valor_icms", "ICMS"),
+        ("base_icms_st", "base ICMS ST"),
+        ("valor_icms_st", "ICMS ST"),
+        ("ipi", "IPI"),
+        ("pis", "PIS"),
+        ("cofins", "COFINS"),
+    ]:
+        expected = proportional_expected(original_item, return_item, field)
+        if not close_money(expected, return_item.get(field)):
+            level = "alto" if field in {"valor_icms_st", "base_icms_st"} and to_float(original_item.get(field)) > 0 else "medio"
+            alerts.append(alert(level, label, f"{label} da devolucao nao esta proporcional a nota original.", round(expected, 2), return_item.get(field)))
+    return alerts
+
+
+def validate_totals(nota_devolucao: dict[str, object]) -> list[dict[str, object]]:
+    items = nota_devolucao.get("itens", [])
+    products_sum = sum(to_float(item.get("valor_total")) for item in items)
+    alerts: list[dict[str, object]] = []
+    if not close_money(products_sum, nota_devolucao.get("valor_total_produtos")):
+        alerts.append(alert("alto", "total_produtos", "Total dos produtos nao bate com a soma dos itens.", round(products_sum, 2), nota_devolucao.get("valor_total_produtos")))
+    expected_note = products_sum + to_float(nota_devolucao.get("valor_frete")) + to_float(nota_devolucao.get("valor_ipi")) + to_float(nota_devolucao.get("valor_icms_st")) - to_float(nota_devolucao.get("valor_desconto"))
+    if not close_money(expected_note, nota_devolucao.get("valor_total_nota")):
+        alerts.append(alert("alto", "total_nota", "Total da nota nao bate com produtos + frete + IPI + ICMS ST - desconto.", round(expected_note, 2), nota_devolucao.get("valor_total_nota")))
+    return alerts
+
+
+def validate_items(nota_original: dict[str, object], nota_devolucao: dict[str, object]) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    original_items = aggregate_items(nota_original.get("itens", []))
+    return_items = aggregate_items(nota_devolucao.get("itens", []))
+    all_alerts: list[dict[str, object]] = []
+    analyzed: list[dict[str, object]] = []
+
+    for code, return_item in return_items.items():
+        item_alerts: list[dict[str, object]] = []
+        original_item = original_items.get(code)
+        if original_item is None:
+            item_alerts.append(alert("alto", "produto", "Produto devolvido nao existe na nota original.", "", code, "Conferir chave da nota original ou codigo do produto."))
+        else:
+            for validator in [validate_cfop, validate_quantity, validate_product_coherence, validate_values, validate_taxes]:
+                item_alerts.extend(validator(original_item, return_item))
+        all_alerts.extend(item_alerts)
+        analyzed.append(
+            {
+                "codigo_produto": code,
+                "descricao": return_item.get("descricao", ""),
+                "status": item_status(item_alerts),
+                "problemas": item_alerts,
+            }
+        )
+    return analyzed, all_alerts
+
+
+def identify_return_type(nota_original: dict[str, object], nota_devolucao: dict[str, object]) -> str:
+    original_items = aggregate_items(nota_original.get("itens", []))
+    return_items = aggregate_items(nota_devolucao.get("itens", []))
+    if set(original_items) != set(return_items):
+        return "PARCIAL"
+    for code, original in original_items.items():
+        returned = return_items.get(code, {})
+        if not close_qty(original.get("quantidade"), returned.get("quantidade")):
+            return "PARCIAL"
+    return "TOTAL"
+
+
+def item_status(alerts: list[dict[str, object]]) -> str:
+    if any(item["nivel"] == "alto" for item in alerts):
+        return "ERRO"
+    if alerts:
+        return "ATENCAO"
+    return "OK"
+
+
+def calculate_status(alerts: list[dict[str, object]]) -> str:
+    if any(item["nivel"] == "alto" for item in alerts):
+        return "ERRO"
+    if alerts:
+        return "ATENCAO"
+    return "CORRETA"
+
+
+def build_summary(status: str, return_type: str, alerts: list[dict[str, object]]) -> str:
+    if status == "CORRETA":
+        return f"Nota de devolucao {return_type.lower()} sem inconsistencias fiscais relevantes."
+    high = sum(1 for item in alerts if item["nivel"] == "alto")
+    medium = sum(1 for item in alerts if item["nivel"] == "medio")
+    low = sum(1 for item in alerts if item["nivel"] == "baixo")
+    return f"Nota de devolucao {return_type.lower()} com {high} alerta(s) alto(s), {medium} medio(s) e {low} baixo(s). Conferencia fiscal recomendada."
+
+
+def analyze_fiscal_return(nota_original: dict[str, object], nota_devolucao: dict[str, object]) -> dict[str, object]:
+    alerts: list[dict[str, object]] = []
+    alerts.extend(validate_reference(nota_original, nota_devolucao))
+    alerts.extend(validate_cnpj(nota_original, nota_devolucao))
+    alerts.extend(validate_operation_uf(nota_devolucao))
+    alerts.extend(validate_totals(nota_devolucao))
+    items_analyzed, item_alerts = validate_items(nota_original, nota_devolucao)
+    alerts.extend(item_alerts)
+
+    return_type = identify_return_type(nota_original, nota_devolucao)
+    status = calculate_status(alerts)
+    return {
+        "status": status,
+        "tipo_devolucao": return_type,
+        "resumo": build_summary(status, return_type, alerts),
+        "alertas": alerts,
+        "itens_analisados": items_analyzed,
+        "observacao": "Analise automatica de apoio. Nao substitui conferencia fiscal humana nem regras especificas por UF/cliente.",
+    }
+
+
+def analyze_fiscal_xmls(original_xml: str | Path, return_xml: str | Path) -> dict[str, object]:
+    return analyze_fiscal_return(nfe_xml_to_note(original_xml), nfe_xml_to_note(return_xml))
+
+
+def analyze_fiscal_xmls_to_json(original_xml: str | Path, return_xml: str | Path, output_path: str | Path) -> Path:
+    report = analyze_fiscal_xmls(original_xml, return_xml)
+    destination = Path(output_path).expanduser()
+    if destination.suffix.lower() != ".json":
+        destination = destination.with_suffix(".json")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    return destination
+
+
+def processar_pasta(caminho_pasta: str | Path) -> dict[str, object]:
+    xml_paths = listar_xmls_da_pasta(caminho_pasta)
+    notas: list[dict[str, object]] = []
+    erros_leitura: list[dict[str, str]] = []
+
+    for xml_path in xml_paths:
+        try:
+            note = nfe_xml_to_note(xml_path)
+            notas.append(note)
+        except Exception as exc:
+            erros_leitura.append(
+                {
+                    "arquivo": str(xml_path),
+                    "erro": str(exc),
+                }
+            )
+
+    notas_devolucao = [note for note in notas if identificar_devolucao(note)]
+    notas_originais = [note for note in notas if not identificar_devolucao(note)]
+    notas_por_chave = indexar_notas_por_chave(notas_originais)
+    resultados: list[dict[str, object]] = []
+
+    for devolucao in notas_devolucao:
+        referenced_key = chave_original_referenciada(devolucao, notas_por_chave)
+        original = notas_por_chave.get(referenced_key)
+        if original is None:
+            result = {
+                "arquivo_devolucao": devolucao.get("nome_arquivo", ""),
+                "chave_devolucao": devolucao.get("chave_acesso", ""),
+                "chave_original_referenciada": referenced_key,
+                "nota_original_encontrada": False,
+                "status": "ERRO",
+                "resumo": "Nota original referenciada nao foi localizada na pasta analisada.",
+                "alertas": [
+                    alert(
+                        "alto",
+                        "referencia",
+                        "Nota original referenciada nao encontrada na pasta.",
+                        referenced_key,
+                        devolucao.get("chave_acesso", ""),
+                        "Inclua o XML da nota original na mesma pasta ou subpasta e rode novamente.",
+                    )
+                ],
+                "itens_analisados": [],
+            }
+        else:
+            analysis = analyze_fiscal_return(original, devolucao)
+            result = {
+                "arquivo_devolucao": devolucao.get("nome_arquivo", ""),
+                "chave_devolucao": devolucao.get("chave_acesso", ""),
+                "chave_original_referenciada": referenced_key,
+                "nota_original_encontrada": True,
+                "status": analysis["status"],
+                "resumo": analysis["resumo"],
+                "alertas": analysis["alertas"],
+                "itens_analisados": analysis["itens_analisados"],
+            }
+        resultados.append(result)
+
+    resumo_geral = {
+        "xmls_lidos": len(xml_paths),
+        "xmls_processados": len(notas),
+        "xmls_com_erro_leitura": len(erros_leitura),
+        "notas_originais": len(notas_originais),
+        "notas_devolucao": len(notas_devolucao),
+        "devolucoes_corretas": sum(1 for result in resultados if result["status"] == "CORRETA"),
+        "devolucoes_com_atencao": sum(1 for result in resultados if result["status"] == "ATENCAO"),
+        "devolucoes_com_erro": sum(1 for result in resultados if result["status"] == "ERRO"),
+        "devolucoes_sem_original": sum(1 for result in resultados if not result["nota_original_encontrada"]),
+    }
+    return {
+        "resumo_geral": resumo_geral,
+        "resultados": resultados,
+        "erros_leitura": erros_leitura,
+    }
+
+
+def exportar_relatorio_json(resultado: dict[str, object], caminho_saida: str | Path) -> Path:
+    destination = Path(caminho_saida).expanduser()
+    if destination.suffix.lower() != ".json":
+        destination = destination.with_suffix(".json")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(resultado, ensure_ascii=False, indent=2), encoding="utf-8")
+    return destination
+
+
+def resultado_csv_rows(resultado: dict[str, object]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for result in resultado.get("resultados", []):
+        alerts = result.get("alertas", [])
+        rows.append(
+            {
+                "arquivo_devolucao": result.get("arquivo_devolucao", ""),
+                "chave_devolucao": result.get("chave_devolucao", ""),
+                "chave_original_referenciada": result.get("chave_original_referenciada", ""),
+                "nota_original_encontrada": result.get("nota_original_encontrada", False),
+                "status": result.get("status", ""),
+                "resumo": result.get("resumo", ""),
+                "qtd_alertas": len(alerts),
+                "qtd_alertas_altos": sum(1 for item in alerts if item.get("nivel") == "alto"),
+                "qtd_alertas_medios": sum(1 for item in alerts if item.get("nivel") == "medio"),
+                "qtd_alertas_baixos": sum(1 for item in alerts if item.get("nivel") == "baixo"),
+                "qtd_itens_analisados": len(result.get("itens_analisados", [])),
+            }
+        )
+    return rows
+
+
+def exportar_relatorio_csv(resultado: dict[str, object], caminho_saida: str | Path) -> Path:
+    destination = Path(caminho_saida).expanduser()
+    if destination.suffix.lower() != ".csv":
+        destination = destination.with_suffix(".csv")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    rows = resultado_csv_rows(resultado)
+    fieldnames = [
+        "arquivo_devolucao",
+        "chave_devolucao",
+        "chave_original_referenciada",
+        "nota_original_encontrada",
+        "status",
+        "resumo",
+        "qtd_alertas",
+        "qtd_alertas_altos",
+        "qtd_alertas_medios",
+        "qtd_alertas_baixos",
+        "qtd_itens_analisados",
+    ]
+    with destination.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter=";")
+        writer.writeheader()
+        writer.writerows(rows)
+    return destination
+
+
+def alert_rows(resultado: dict[str, object]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for result in resultado.get("resultados", []):
+        for item in result.get("alertas", []):
+            row = {
+                "arquivo_devolucao": result.get("arquivo_devolucao", ""),
+                "chave_devolucao": result.get("chave_devolucao", ""),
+                "chave_original_referenciada": result.get("chave_original_referenciada", ""),
+            }
+            row.update(item)
+            rows.append(row)
+    return rows
+
+
+def item_rows(resultado: dict[str, object]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for result in resultado.get("resultados", []):
+        for item in result.get("itens_analisados", []):
+            rows.append(
+                {
+                    "arquivo_devolucao": result.get("arquivo_devolucao", ""),
+                    "chave_devolucao": result.get("chave_devolucao", ""),
+                    "codigo_produto": item.get("codigo_produto", ""),
+                    "descricao": item.get("descricao", ""),
+                    "status": item.get("status", ""),
+                    "qtd_problemas": len(item.get("problemas", [])),
+                }
+            )
+    return rows
+
+
+def exportar_relatorio_excel(resultado: dict[str, object], caminho_saida: str | Path) -> Path:
+    import pandas as pd
+
+    destination = Path(caminho_saida).expanduser()
+    if destination.suffix.lower() != ".xlsx":
+        destination = destination.with_suffix(".xlsx")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    with pd.ExcelWriter(destination, engine="openpyxl") as writer:
+        pd.DataFrame([resultado.get("resumo_geral", {})]).to_excel(writer, sheet_name="resumo_geral", index=False)
+        pd.DataFrame(resultado_csv_rows(resultado)).to_excel(writer, sheet_name="resultados", index=False)
+        pd.DataFrame(alert_rows(resultado)).to_excel(writer, sheet_name="alertas", index=False)
+        pd.DataFrame(item_rows(resultado)).to_excel(writer, sheet_name="itens_analisados", index=False)
+        pd.DataFrame(resultado.get("erros_leitura", [])).to_excel(writer, sheet_name="erros_leitura", index=False)
+    return destination
+
+
+def processar_pasta_para_arquivos(caminho_pasta: str | Path, caminho_saida: str | Path) -> dict[str, Path]:
+    base = Path(caminho_saida).expanduser()
+    if base.suffix:
+        base = base.with_suffix("")
+    result = processar_pasta(caminho_pasta)
+    return {
+        "json": exportar_relatorio_json(result, base.with_suffix(".json")),
+        "csv": exportar_relatorio_csv(result, base.with_suffix(".csv")),
+        "xlsx": exportar_relatorio_excel(result, base.with_suffix(".xlsx")),
+    }

@@ -1,0 +1,12 @@
+INSTALACAO - AUTOMACOES MSB
+
+1. Copie esta pasta para o computador da pessoa.
+2. Abra a pasta.
+3. Clique duas vezes em instalar.bat.
+4. Aguarde a instalacao das dependencias.
+5. Use o atalho "Automações MSB" criado na Area de Trabalho.
+
+Observacao:
+- O computador precisa ter Python 3.10 ou superior instalado.
+- Se o Python nao existir, instale pelo site oficial e marque "Add Python to PATH".
+- Depois rode instalar.bat novamente.
