@@ -153,13 +153,71 @@ def to_float(value: object) -> float | None:
 
 
 def parse_weight_to_kg(value: object) -> float | None:
-    text = normalize(value).replace(",", ".")
+    text = strip_accents(value).casefold().replace(",", ".")
+    text = re.sub(r"[^a-z0-9.]+", " ", text)
     matches = re.findall(r"(\d+(?:\.\d+)?)\s*(kg|gr|g)\b", text)
     if matches:
         amount_text, unit = matches[-1]
         amount = float(amount_text)
         return amount / 1000 if unit in {"g", "gr"} else amount
     return to_float(value)
+
+
+CATALOG_COLUMN_ALIASES = {
+    "COD FISCAL": {
+        "cod fiscal",
+        "codigo fiscal",
+        "codigo",
+        "cod",
+        "c d fiscal",
+    },
+    "PRODUTO": {
+        "produto",
+        "descricao",
+        "descricao produto",
+        "nome produto",
+    },
+    "PESO LIQ": {
+        "peso liq",
+        "peso liquido",
+        "peso l q",
+        "peso",
+    },
+    "QTDE CAIXA": {
+        "qtde caixa",
+        "qtd caixa",
+        "quantidade caixa",
+        "quant caixa",
+    },
+    "SHELF (DIAS)": {
+        "shelf dias",
+        "shelf",
+        "shelf life",
+        "shelf life dias",
+        "validade dias",
+    },
+}
+
+
+def normalize_column_name(value: object) -> str:
+    text = strip_accents(value).casefold()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize_catalog_columns(df: pd.DataFrame) -> pd.DataFrame:
+    renamed: dict[object, str] = {}
+    used: set[str] = set()
+    for column in df.columns:
+        column_norm = normalize_column_name(column)
+        for canonical, aliases in CATALOG_COLUMN_ALIASES.items():
+            if canonical in used:
+                continue
+            if column_norm == normalize_column_name(canonical) or column_norm in aliases:
+                renamed[column] = canonical
+                used.add(canonical)
+                break
+    return df.rename(columns=renamed)
 
 
 def load_catalog(path: str | Path) -> pd.DataFrame:
@@ -171,6 +229,7 @@ def load_catalog(path: str | Path) -> pd.DataFrame:
     else:
         df = pd.read_excel(source, sheet_name=0)
 
+    df = normalize_catalog_columns(df)
     required = {"COD FISCAL", "PRODUTO", "PESO LIQ", "QTDE CAIXA", "SHELF (DIAS)"}
     missing = required - set(df.columns)
     if missing:
