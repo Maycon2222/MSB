@@ -5,3 +5,4 @@ selenium>=4.0
 pyautogui>=0.9
 mysql-connector-python>=8.0
 fpdf>=1.7
+pypdf>=4.0
